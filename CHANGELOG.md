@@ -1,3 +1,6 @@
+## [0.2.5] - 2025-10-03
+- Add -R for executing in the workspace root.
+
 ## [0.2.3] - 2025-10-03
 - Remove unnecessary function wrapping
 - add ci
