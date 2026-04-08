@@ -6,8 +6,17 @@ edition = "2024"
 keywords = ["cli", "cargo", "exec"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/Squirreljetpack/cargo-exec"
+repository = "https://github.com/cmrschwarz/cargo-exec"
 description = "Extend cargo aliases to arbitrary commands"
+
+[package.metadata.binstall]
+# The crate is named cargo-alias-exec, but the shipped binary is cargo-exec.
+pkg-url = "{ repo }/releases/download/v{ version }/cargo-exec-{ target }.{ archive-format }"
+bin-dir = "{ bin }{ binary-ext }"
+pkg-fmt = "tgz"
+
+[package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
+pkg-fmt = "zip"
 
 [[bin]]
 name = "cargo-exec"

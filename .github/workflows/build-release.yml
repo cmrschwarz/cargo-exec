@@ -1,51 +1,59 @@
-name: Build
+name: Release
 
 on:
   push:
-    tags: ["*"]
-  pull_request:
+    tags:
+      - "v*"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  build:
-    name: Build on ${{ matrix.os }}
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Create release
+        uses: taiki-e/create-gh-release-action@v1
+        with:
+          changelog: CHANGELOG.md
+
+  upload-assets:
+    name: Upload ${{ matrix.target }}
+    needs: create-release
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Build Release
-        run: cargo build --release
-
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v1
         with:
-          name: Release ${{ github.ref_name }}
-          tag_name: ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          targets: ${{ matrix.target }}
 
-  publish:
-      name: Publish to crates.io
-      runs-on: ubuntu-latest
-      needs: build
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
-        - name: Setup Rust
-          uses: dtolnay/rust-toolchain@stable
-        - name: Publish
-          env:
-            CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_API_KEY }}
-          run: cargo publish
+      - name: Build and upload release archives
+        uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: cargo-exec
+          target: ${{ matrix.target }}
+          archive: cargo-exec-$target
+          locked: true
+          checksum: sha256
+          include: README.md LICENSE
